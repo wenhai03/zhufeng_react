@@ -1,25 +1,24 @@
 import React from './react'
+// import ReactDOM from './react-dom/index.js'
+import ReactDOM from './react-dom'
 
-// jsx浏览器不能识别和运行，要靠babel转换成javaScript
-function sayHello () {
-  alert('hello')
+let onClick = (event) => {
+  alert("Hello")
 }
-
 // let element = (
-//   <button id="sayHello" style={{color: "rend", background: "green"}} onClick={ sayHello}>
-//     say
-//     <b>hello</b>
+//   <button id="sayHello" onClick={onClick}>
+//     say <span color="red">000Hello</span>
 //   </button>
 // )
 
 let element = React.createElement(
   'button',
-  {id: 'sayHello', style: {color: 'red', backgroundColor: 'green'}, onClick: sayHello},
-  'say',
-  React.createElement('b', {}, 'Hello')
+  {id: 'sayHello', onClick},
+  'say', React.createElement('span', {style: {color: 'red'}}, 'Hello')
 )
 
-React.render(
+
+ReactDOM.render(
   element,
   document.getElementById('root')
 )
