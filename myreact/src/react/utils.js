@@ -30,3 +30,18 @@ function setProp (dom, key, value) {
     dom.setAttribute(key, value)
   }
 }
+
+// 展开一个数组，打平一个任意的多维数组.这样可以避免深克隆
+export function flatten (array) {
+  let flatted = [];
+  (function flat (array) {
+    array.forEach(item => {
+      if (Array.isArray(item)) {
+        flat(item)
+      } else {
+        flatted.push(item)
+      }
+    })
+  })(array)
+  return flatted
+}

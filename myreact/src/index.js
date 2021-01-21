@@ -1,34 +1,32 @@
 import React from './react'
 // import ReactDOM from './react-dom/index.js'
 import ReactDOM from './react-dom'
+import {ELEMENT} from "./react/constants"
 
-let onClick = (synctheticEvent) => {
-  console.log('synctheticEvent', synctheticEvent)
-  alert('onClick')
-  synctheticEvent.persist()
-  
-  // setInterval(()  => {
-  //   console.log('2', synctheticEvent)
-  // }, 1500)
+class ClassComponent extends React.Component {
+  // render只会返回一个顶级元素
+  render() {
+    return React.createElement(FunctionCounter, {id: 'ClassComponent'}, 'hello')
+  }
 }
-let spanClick = (synctheticEvent) => {
-  alert('spanClick')
+
+function FunctionCounter() {
+  return React.createElement('div', {id: 'FunctionCounter '}, 'hello', 'world')
 }
-// let element = (
-//   <button id="sayHello" onClick={onClick}>
-//     say <span color="red">000Hello</span>
-//   </button>
-// )
 
-let element = React.createElement(
-  'button',
-  {id: 'sayHello', onClick},
-  'say', React.createElement('span', {onClick: spanClick, style: {color: 'red'}}, 'Hello')
-)
-
+// let element1 = React.createElement('div', {id: 'counter'}, 'hello')
+let element2 = React.createElement(ClassComponent, {id: 'counter'})
+let element3  = React.createElement(FunctionCounter)
+// React元素 = 虚拟DOM = {$$typeof: ELEMENT, type: 'div'}
 
 ReactDOM.render(
-  element,
+  element2,
   document.getElementById('root')
 )
-
+/*
+*
+* 1.如何渲染类组件和函数组件
+* 2.如果实现异步的seState
+*
+*
+* */
