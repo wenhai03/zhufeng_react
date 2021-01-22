@@ -1,6 +1,7 @@
 import {ELEMENT, TEXT, FUNCTION_COMPONENT, CLASS_COMPONENT} from "./constants"
 import {ReactElement} from "./vdom"
 import {Component} from "./component"
+import {flatten} from "./utils"
 
 function createElement (type, config = {}, ...children) {
   delete config.__source
@@ -15,14 +16,15 @@ function createElement (type, config = {}, ...children) {
     $$typeof = FUNCTION_COMPONENT
   }
   
+  children = flatten(children);
   props.children = children.map(item => {
-    if (typeof item === 'object') {
-      return item  // React.crateElement('span', {color: 'red'}, 'Hello')
+    if (typeof item === 'object' || typeof item === 'function') {
+      return item;// React.createElement('span', { color: 'red' }, 'Hello')
     } else {
-      return {$$typeof: TEXT, type: TEXT, content: item} // item: 'Hello'
+      return { $$typeof: TEXT, type: TEXT, content: item };//item = "Hello"
     }
   })
-  return ReactElement($$typeof, type, key, ref, props)
+  return ReactElement($$typeof, type, key, ref, props);
 }
 
 export {

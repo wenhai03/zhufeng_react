@@ -1,12 +1,50 @@
 import {ELEMENT, TEXT, FUNCTION_COMPONENT, CLASS_COMPONENT} from "./constants"
 import {onlyOne, setProps, flatten} from './utils'
 
+export function compareTwoElements (oldRenderElement, newRenderElement) {
+  oldRenderElement = onlyOne(oldRenderElement);
+  newRenderElement = onlyOne(newRenderElement);
+  let currentDOM = oldRenderElement.dom;//先取出老的DOM节点
+  let currentElement = oldRenderElement;
+  if (newRenderElement == null) {
+    currentDOM.parentNode.removeChild(currentDOM);//如果新的虚拟DOM节点为NULL。则要干掉老节点
+    currentDOM = null;
+  } else if (oldRenderElement.type != newRenderElement.type) {//span div function class
+    let newDOM = createDOM(newRenderElement);//如果节点类型不同，则需要创建新的DOM节点，然后把老DOM节点替换掉
+    currentDOM.parentNode.replaceChild(newDOM, currentDOM);
+    currentElement = newRenderElement;
+  } else {
+    //新老节点都有，并且类型一样。 div span 就要进行dom diff 深度比较 比较他们的属性和他们的子节点，而且还要尽可能复用老节点
+    // updateElement(oldRenderElement, newRenderElement);
+    let newDOM = createDOM(newRenderElement)
+    currentDOM.parentNode.replaceChild(newDOM, currentDOM)
+  }
+  return currentElement;
+}
+
+// function updateElement(oldElement, newElement) {
+//   let currentDOM = oldElement.dom;//获取老的页面上真实存在的那个DOM节点
+//   newElement.dom = oldElement.dom;//DOM要实现复用,就是为了复用老的DOM节点
+//   if (oldElement.$$typeof === TEXT && newElement.$$typeof === TEXT) {
+//     if (oldElement.content !== newElement.content)//如果说老的文本内容 和新的文本内容不一样的话
+//       currentDOM.textContent = newElement.content;
+//   } else if (oldElement.$$typeof === ELEMENT) {//如果是元素类型 span div p
+//     // 先更新父节点的属性，再比较更新子节点
+//     updateChildrenElements(currentDOM, oldElement.props.children, newElement.props.children);
+//     updateDOMProperties(currentDOM, oldElement.props, newElement.props);
+//     //会把newElement的props赋给oldElement.props
+//     //如果当前是element元素。会把newElement.props(包括 children) 赋给oldElement.props
+//     oldElement.props = newElement.props;//赋完值之后，老的虚拟DOM就没有，使用新虚拟DOM了元素
+//   } else if (oldElement.$$typeof === FUNCTION_COMPONENT) {
+//     updateFunctionComponent(oldElement, newElement);
+//   } else if (oldElement.$$typeof === CLASS_COMPONENT) {
+//     updateClassComponent(oldElement, newElement);
+//   }
+// }
+
 export function createDOM (element) {
-  element = onlyOne(element)
+  element = onlyOne(element) // 为什么要这么写 children是一个数组
   let {$$typeof} = element
-  
-  // const TEXT = Symbol.for('react.text')
-  // const ELEMENT = Symbol.for('react.element')
   
   let dom = null
   if (!$$typeof) { // element是一个字符串或者数字
@@ -23,6 +61,7 @@ export function createDOM (element) {
     // 如果此虚拟DOM是一个类组件，就渲染此类组件
     dom = createClassComponentDOM(element)
   }
+  element.dom = dom
   
   return dom
 }
@@ -66,7 +105,7 @@ function createNativeDOM (element) {
 function createDOMChildren (parentNode, children) {
   console.log('flatten(children) -> ', flatten(children))
   children && flatten(children).forEach(child => {
-  // children && children.flat(Infinity).forEach(child => {
+    // children && children.flat(Infinity).forEach(child => {
     // child其实是虚拟DOM，我们会在虚拟DOM加一个属性 _mountIndex ，指向次虚拟DOM节点在父节点上
     // 在后面我们做dom-diff的时候会变得非常非常重要
     let childDOM = createDOM(child) // 创建子虚拟DOM节点的真实DOM元素

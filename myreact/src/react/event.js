@@ -8,68 +8,62 @@
 * eventType 事件类型 onClick onChange
 * listener 事件处理函数
 * */
+import {updateQueue} from "./component"
+
 export function addEvent (dom, eventType, listener) {
-  eventType = eventType.toLowerCase() // onClick => onclick
-  // 在要绑定的DOM节点上挂载一个对象，准备存放监听函数
+  eventType = eventType.toLowerCase()
   let eventStore = dom.eventStore || (dom.eventStore = {})
-  // eventStore.onclick = ()= > { alert('hello')}
-  eventStore[eventType] = listener
-  // document.addEventListener(click', dispatchEvent)
-  // 第一阶段是捕获，第二阶段是冒泡 false冒泡
+  eventStore[eventType] = listener//eventStore.onclick=listener  addEventListener
   document.addEventListener(eventType.slice(2), dispatchEvent, false)
-  
 }
 
-// 真正事件触发的回调是这个dispatchEvent方法
-// event就是原生DOM事件对象，但是传递给我们的监听函数并不是它
-// 所有的事件处理函数都会进入dispatchEvent
-let synctheticEvent
+let syntheticEvent
 
 function dispatchEvent (event) {
-  let {type, target} = event // type=click target==button
-  let eventType = 'on' + type // onclick
-  // 在此处给synctheticEvent赋值
-  synctheticEvent = getSyntheticEvent(event)
-  
-  // 模拟事件冒泡
+  let {type, target} = event
+  let eventType = 'on' + type
+  syntheticEvent = getSyntheticEvent(event)
+  //在事件监听函数执行前先进入批量更新模式
+  updateQueue.isPending = true
   while (target) {
     let {eventStore} = target
-    let listener = eventStore && eventStore[eventType] // onclick
+    //找的是事件触发对象和它的上级对象上绑过的事件
+    let listener = eventStore && eventStore[eventType]
     if (listener) {
-      listener.call(target, synctheticEvent)
+      listener.call(target, syntheticEvent)
     }
     target = target.parentNode
   }
-  // 等所有的监听函数执行完了，就可以清掉所有的属性了，供下次复用此syntheticEvent对象 对象池
-  for (let key in synctheticEvent) {
-    let eventType = 'on' + type // onclick
-    
-    // if (key !== 'persist') {
-    //   synctheticEvent[key] = null
-    // }
+  for (let key in syntheticEvent) {
+    if (syntheticEvent.hasOwnProperty(key))
+      delete syntheticEvent[key]
   }
+  //当事件处理函数执行完成后，把批量更新模式改为false
+  updateQueue.isPending = false
+  //执行批量更新，就是把缓存的那个updater全部执行了
+  updateQueue.batchUpdate()
 }
 
 // 如果说执行了persist，就让syntheticEvent指向了新对象，white循环结束之后再清除的是新对象的属性
 function persist () {
-  synctheticEvent = {persist}
+  syntheticEvent = {}
+  Object.setPrototypeOf(syntheticEvent, {
+    persist
+  })
 }
 
 function getSyntheticEvent (nativeEvent) {
-  // 第一次才会创建，以后就不再创建，始终有同一个
-  if (!synctheticEvent) {
-    synctheticEvent = {}
-    synctheticEvent.__proto__.persist = persist
+  if (!syntheticEvent) {
+    persist()
   }
-  synctheticEvent.nativeEvent = nativeEvent
-  synctheticEvent.currentTarget = nativeEvent.target
-  // 把原生事件对象上的方法和属性都拷贝到了合成对象上
-  for (const key in nativeEvent) {
-    if (typeof nativeEvent[key] === 'function') {
-      synctheticEvent[key] = nativeEvent[key].bind(nativeEvent)
+  syntheticEvent.nativeEvent = nativeEvent
+  syntheticEvent.currentTarget = nativeEvent.target
+  for (let key in nativeEvent) {
+    if (typeof nativeEvent[key] == 'function') {
+      syntheticEvent[key] = nativeEvent[key].bind(nativeEvent)
     } else {
-      synctheticEvent[key] = nativeEvent[key]
+      syntheticEvent[key] = nativeEvent[key]
     }
   }
-  return synctheticEvent
+  return syntheticEvent
 }
